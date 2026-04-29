@@ -15,6 +15,8 @@ A solução utiliza um **ESP32** conectado ao sensor **MPU6050**, responsável p
 
 ## 🧠 Arquitetura da Solução
 
+<img src="CareSteps_diagrama.drawio.png">
+
 A arquitetura segue um modelo em camadas, integrando hardware, comunicação e backend IoT.
 
 ---
