@@ -199,23 +199,6 @@ GET /STH/v1/contextEntities/type/movement/id/urn:ngsi-id:move:001/attributes/ste
 
 ---
 
-## 📦 Itens de Entrega
-
-* 🔗 Link da simulação no Wokwi
-* 💻 Repositório GitHub público
-* 🎥 Vídeo explicativo (3 minutos)
-
----
-
-## 🚀 Possíveis Melhorias
-
-* Cálculo de distância percorrida
-* Estimativa de calorias
-* Integração com aplicativo mobile
-* Dashboard com gráficos em tempo real
-
----
-
 ## 👥 Equipe
 
 | Nome                          | RM     |
