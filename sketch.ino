@@ -32,8 +32,8 @@
 
 // ===================== WI-FI =====================
 
-const char* WIFI_SSID  = "LIVE TIM_122_5G";
-const char* WIFI_SENHA = "umkgnp6ma3";
+const char* WIFI_SSID  = "SEU_WIFI";
+const char* WIFI_SENHA = "SUA_SENHA";
 
 // ===================== FIWARE =====================
 
