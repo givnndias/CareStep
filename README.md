@@ -81,32 +81,28 @@ Onde:
 
 ---
 
-## 🧪 Simulação no Wokwi
+## 📈 Dashboard Dinâmico
 
-O projeto foi desenvolvido e testado utilizando o simulador online Wokwi, que permite a simulação de circuitos com ESP32 e sensores de forma prática e interativa.
+O CareStep agora conta com um Dashboard Dinâmico desenvolvido em Python, responsável por consultar automaticamente os dados armazenados no FIWARE STH-Comet e apresentar informações em tempo real sobre a atividade do usuário.
 
-🔗 **Acesse a simulação:**
-https://wokwi.com/projects/461399361402004481
+O dashboard realiza atualizações periódicas e permite acompanhar a evolução dos dados coletados pelo dispositivo de forma visual e intuitiva.
+
+## 📊 Indicadores Monitorados
+
+O dashboard exibe:
+
+👣 Quantidade de passos
+🏃 Intensidade do movimento
+🔋 Nível da bateria
+
+Além dos valores atuais, também são calculadas estatísticas simples, como média dos registros recebidos.
 
 ---
 
 ### 🔹 Componentes utilizados
 
 - ESP32  
-- Sensor MPU6050 (acelerômetro)
-
----
-
-### 🔹 Funcionamento na simulação
-
-No Wokwi, o sensor MPU6050 simula os movimentos do dispositivo. A variação dos valores de aceleração nos eixos X, Y e Z permite reproduzir o comportamento de uma pessoa em movimento.
-
-Para simular passos:
-
-1. Inicie a simulação  
-2. Clique no sensor MPU6050  
-3. Altere os valores de aceleração  
-4. Observe o aumento da contagem de passos no Serial Monitor  
+- Sensor MPU6050 (acelerômetro) 
 
 ---
 
