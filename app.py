@@ -9,8 +9,8 @@ import time
 
 BASE_URL = "http://SEU_IP_DA_VM:8666"
 
-ENTITY_TYPE = "movement"
-ENTITY_ID = "urn:ngsi-id:move:001"
+ENTITY_TYPE = "StepMonitor"
+ENTITY_ID = "urn:ngsi-ld:StepMonitor:tenis001"
 
 HEADERS = {
     "fiware-service": "careplus",

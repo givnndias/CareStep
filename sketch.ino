@@ -1,23 +1,23 @@
-//Turma: 1ESPA
-//Equipe: Giovanna Oliveira Ferreira Dias - RM: 566647
-//Maria Laura Druzeic - RM: 566634
-//Marianne Mukai Nishikawa - RM:568001
+// Turma: 1ESPA
+// Equipe: Giovanna Oliveira Ferreira Dias - RM: 566647
+// Maria Laura Druzeic - RM: 566634
+// Marianne Mukai Nishikawa - RM:568001
 
 /*
- * MONITOR DE PASSOS VESTÍVEL PARA TÊNIS - ESP32-C3 + GY-87 + FIWARE
+ * MONITOR DE PASSOS VESTÍVEL PARA TÊNIS - ESP32 + MPU6050 + FIWARE
  *
- * Possui:
- * - Leitura do acelerômetro MPU6050 do GY-87 por I2C direto
- * - Contador de passos
- * - Envio para FIWARE Orion por Wi-Fi usando WiFiClient
- * - LED verde somente para bateria baixa
- * - Leitura da bateria no GPIO 1
+ * Adaptado para Wokwi:
+ * - ESP32
+ * - Sensor MPU6050 do Wokwi
+ * - Potenciômetro simulando bateria
+ * - LED verde para bateria baixa
+ * - Wi-Fi Wokwi-GUEST
  *
  * PINOS:
- * GPIO 4 -> SDA GY-87
- * GPIO 5 -> SCL GY-87
+ * GPIO 21 -> SDA MPU6050
+ * GPIO 22 -> SCL MPU6050
  * GPIO 2 -> LED verde bateria
- * GPIO 1 -> ADC bateria
+ * GPIO 34 -> ADC bateria simulada
  */
 
 #include <Wire.h>
@@ -25,20 +25,19 @@
 
 // ===================== PINOS =====================
 
-#define PIN_SDA             4
-#define PIN_SCL             5
+#define PIN_SDA             21
+#define PIN_SCL             22
+#define PIN_ADC_BATERIA     34
 #define PIN_LED_BATERIA     2
-#define PIN_ADC_BATERIA     1
 
-// ===================== WI-FI =====================
 
-const char* WIFI_SSID  = "SEU_WIFI";
-const char* WIFI_SENHA = "SUA_SENHA";
+// ===================== WI-FI WOKWI =====================
+
+const char* WIFI_SSID  = "Wokwi-GUEST";
+const char* WIFI_SENHA = "";
 
 // ===================== FIWARE =====================
 
-// Coloque aqui o IP do computador/servidor onde o Orion está rodando.
-// Exemplo: 192.168.0.100
 const char* ORION_HOST = "136.111.181.27";
 const uint16_t ORION_PORT = 1026;
 
@@ -50,16 +49,13 @@ const char* ENTITY_TYPE = "StepMonitor";
 
 const uint32_t INTERVALO_FIWARE_MS = 10000;
 
-// ===================== MPU6050 / GY-87 =====================
+// ===================== MPU6050 =====================
 
 const uint8_t MPU_ADDR = 0x68;
-const float ACC_SCALE = 8192.0f;   // range +-4g
+const float ACC_SCALE = 8192.0f;
 const float GRAVIDADE = 9.81f;
 
 // ===================== PASSOS =====================
-
-const float LIMIAR_PASSO = 3.5f;
-const uint32_t INTERVALO_MIN_MS = 450;
 
 uint32_t totalPassos = 0;
 uint32_t ultimoPasso_ms = 0;
@@ -111,7 +107,7 @@ void setup() {
   delay(300);
 
   Serial.println();
-  Serial.println("Monitor Passos ESP32-C3 - versao reduzida");
+  Serial.println("Monitor Passos ESP32 - Wokwi");
 
   pinMode(PIN_LED_BATERIA, OUTPUT);
   digitalWrite(PIN_LED_BATERIA, LOW);
@@ -122,7 +118,7 @@ void setup() {
   Wire.begin(PIN_SDA, PIN_SCL);
 
   if (!iniciarMPU()) {
-    Serial.println("ERRO: MPU6050/GY-87 nao encontrado");
+    Serial.println("ERRO: MPU6050 nao encontrado");
     while (true) delay(1000);
   }
 
@@ -134,7 +130,7 @@ void setup() {
 
   if (tensaoBateria_mV > 100 && tensaoBateria_mV < BATERIA_VAZIA_MV) {
     Serial.println("Bateria critica");
-}
+  }
 
   conectarWiFi();
   enviarFiware(true);
@@ -143,8 +139,6 @@ void setup() {
 // ===================== LOOP =====================
 
 void loop() {
-
-
   float ax, ay, az, intensidade;
 
   if (lerMPU(ax, ay, az, intensidade)) {
@@ -160,9 +154,18 @@ void loop() {
   enviarFiware(false);
 
   static uint32_t ultimoSerial = 0;
+
   if (millis() - ultimoSerial >= 1000) {
     ultimoSerial = millis();
-    Serial.printf("Passos:%u Bat:%u Int:%.2f\n", totalPassos, tensaoBateria_mV, ultimaIntensidade);
+    Serial.printf(
+      "Passos:%u Bat:%u Int:%.2f Ax:%.2f Ay:%.2f Az:%.2f\n",
+      totalPassos,
+      tensaoBateria_mV,
+      ultimaIntensidade,
+      ultimoAx,
+      ultimoAy,
+      ultimoAz
+    );
   }
 
   delay(20);
@@ -172,9 +175,11 @@ void loop() {
 
 bool iniciarMPU() {
   Wire.beginTransmission(MPU_ADDR);
-  if (Wire.endTransmission() != 0) return false;
 
-  // Acorda MPU6050: PWR_MGMT_1 = 0
+  if (Wire.endTransmission() != 0) {
+    return false;
+  }
+
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x6B);
   Wire.write(0x00);
@@ -182,13 +187,11 @@ bool iniciarMPU() {
 
   delay(100);
 
-  // Configura acelerômetro para +-4g: ACCEL_CONFIG = 0x08
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x1C);
   Wire.write(0x08);
   Wire.endTransmission();
 
-  // Filtro passa-baixa aproximado 10 Hz: CONFIG = 0x05
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x1A);
   Wire.write(0x05);
@@ -204,7 +207,9 @@ int16_t ler16(uint8_t reg) {
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_ADDR, (uint8_t)2);
 
-  if (Wire.available() < 2) return 0;
+  if (Wire.available() < 2) {
+    return 0;
+  }
 
   int16_t valor = (Wire.read() << 8) | Wire.read();
   return valor;
@@ -225,32 +230,27 @@ bool lerMPU(float &ax, float &ay, float &az, float &intensidade) {
   return true;
 }
 
-void detectarPasso(float intensidade) {
+// ===================== CONTADOR DE PASSOS =====================
 
+void detectarPasso(float intensidade) {
   const float LIMIAR_SUBIDA = 3.5f;
   const float LIMIAR_DESCIDA = 1.5f;
 
   uint32_t agora = millis();
 
   if (!picoAtivo) {
-
     if (intensidade > LIMIAR_SUBIDA) {
       picoAtivo = true;
     }
-
   } else {
-
     if (intensidade < LIMIAR_DESCIDA) {
-
       picoAtivo = false;
 
       if (agora - ultimoPasso_ms >= 450) {
-
         ultimoPasso_ms = agora;
         totalPassos++;
 
         Serial.printf("PASSO %u\n", totalPassos);
-
       }
     }
   }
@@ -274,7 +274,7 @@ void conectarWiFi() {
   Serial.print("[WiFi] Conectando em: ");
   Serial.println(WIFI_SSID);
 
-  WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA, 6);
 
   uint32_t inicio = millis();
 
@@ -294,7 +294,7 @@ void conectarWiFi() {
   }
 }
 
-// ===================== FIWARE HTTP SEM HTTPCLIENT =====================
+// ===================== FIWARE HTTP =====================
 
 bool enviarHttp(const char* metodo, const char* caminho, const String &body, int &codigoHttp) {
   codigoHttp = -1;
@@ -402,8 +402,13 @@ String jsonAttrs() {
 }
 
 bool criarEntidade() {
-  if (entidadeCriada) return true;
-  if (WiFi.status() != WL_CONNECTED) return false;
+  if (entidadeCriada) {
+    return true;
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
 
   int code = -1;
   bool ok = enviarHttp("POST", "/v2/entities", jsonCriacao(), code);
@@ -429,10 +434,15 @@ void enviarFiware(bool forcar) {
 
   if (WiFi.status() != WL_CONNECTED) {
     conectarWiFi();
-    if (WiFi.status() != WL_CONNECTED) return;
+
+    if (WiFi.status() != WL_CONNECTED) {
+      return;
+    }
   }
 
-  if (!criarEntidade()) return;
+  if (!criarEntidade()) {
+    return;
+  }
 
   String caminho = String("/v2/entities/") + ENTITY_ID + "/attrs";
 
@@ -449,7 +459,7 @@ void enviarFiware(bool forcar) {
   }
 }
 
-// ===================== BATERIA =====================
+// ===================== BATERIA SIMULADA =====================
 
 uint16_t lerBateria() {
   uint32_t soma = 0;
@@ -461,11 +471,12 @@ uint16_t lerBateria() {
 
   uint16_t media = soma / 16;
 
-  if (media < 50) return 0;
+  if (media < 50) {
+    return 0;
+  }
 
   uint16_t vadc = (uint32_t)media * 3300 / 4095;
 
-  // Divisor 100k + 100k
   return vadc * 2;
 }
 
@@ -474,7 +485,9 @@ void monitorarBateria() {
 
   uint32_t agora = millis();
 
-  if (agora - ultimaLeituraBat_ms < INTERVALO_BATERIA_MS) return;
+  if (agora - ultimaLeituraBat_ms < INTERVALO_BATERIA_MS) {
+    return;
+  }
 
   ultimaLeituraBat_ms = agora;
   tensaoBateria_mV = lerBateria();
@@ -503,6 +516,3 @@ void atualizarLEDBateria(uint16_t mv) {
     digitalWrite(PIN_LED_BATERIA, estadoLedBateria ? HIGH : LOW);
   }
 }
-
-
-
