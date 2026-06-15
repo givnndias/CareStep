@@ -2,209 +2,178 @@
 
 ## 📌 Descrição do Projeto
 
-O **CareStep** é um dispositivo IoT voltado para monitoramento de atividade física, capaz de identificar e registrar a quantidade de passos realizados pelo usuário.
+O **CareStep** é uma solução baseada em Internet das Coisas voltada ao monitoramento da atividade física, capaz de identificar e registrar automaticamente a quantidade de passos realizados pelo usuário.
 
-O sistema foi projetado para ser versátil, podendo ser utilizado de duas formas:
+O sistema foi desenvolvido para auxiliar no acompanhamento de hábitos saudáveis, promovendo o monitoramento contínuo da movimentação e disponibilizando as informações coletadas para visualização remota.
 
-* 🔑 Como **chaveiro inteligente**, facilitando o uso diário
-* 👟 **Embutido no tênis**, permitindo uma coleta de dados mais precisa durante caminhadas e corridas
+A solução utiliza um **ESP32** integrado ao sensor **MPU6050**, responsável pela captura dos dados de aceleração. Essas informações são processadas localmente para detecção dos passos e enviadas para a plataforma **FIWARE Orion Context Broker** por meio de requisições HTTP.
 
-A solução utiliza um **ESP32** conectado ao sensor **MPU6050**, responsável por capturar dados de aceleração e movimento. Esses dados são processados localmente para detectar passos e enviados para a plataforma **FIWARE** via protocolo **MQTT**.
+Além da versão física, o projeto também conta com uma **simulação completa no Wokwi**, permitindo demonstrar todas as funcionalidades do sistema em ambiente virtual.
 
 ---
 
-## 🧠 Arquitetura da Solução
+# 🧠 Arquitetura da Solução
 
 <img src="CareSteps_diagrama.drawio.png">
 
-A arquitetura segue um modelo em camadas, integrando hardware, comunicação e backend IoT.
+A arquitetura do CareStep integra sensores, processamento embarcado, comunicação em rede e visualização dos dados por meio de dashboards.
+
+Fluxo de funcionamento:
+
+```text
+MPU6050 → ESP32 → Wi-Fi → FIWARE Orion → Dashboard Python
+```
 
 ---
 
-## ⚙️ Tecnologias Utilizadas
+# ⚙️ Tecnologias Utilizadas
 
 * ESP32
-* MPU6050 (acelerômetro)
-* Wokwi (simulação)
-* FIWARE
-* MQTT (Mosquitto)
-* Python / Node-RED (Dashboard)
+* MPU6050 (Acelerômetro)
+* Wokwi (Simulação)
+* FIWARE Orion Context Broker
+* HTTP
+* Python
+* STH-Comet
+* Matplotlib
+* Requests
 * Postman
 
 ---
 
-## 🔌 Dispositivo IoT
+# 🔌 Dispositivo IoT
 
-O CareStep pode ser utilizado em dois formatos:
+O CareStep foi concebido para aplicações vestíveis, podendo ser integrado ao tênis para monitoramento contínuo da atividade física.
 
-### 🔑 Chaveiro Inteligente
+## Funcionalidades do dispositivo
 
-* Portátil
-* Uso contínuo no dia a dia
-* Monitoramento básico de movimento
-
-### 👟 Sensor Embutido no Tênis
-
-* Maior precisão na detecção de passos
-* Ideal para atividades físicas (corrida/caminhada)
-* Melhor estabilidade dos dados
+* 👣 Contagem automática de passos;
+* 🏃 Cálculo da intensidade do movimento;
+* 🔋 Monitoramento do nível da bateria;
+* 📶 Comunicação Wi-Fi;
+* ☁️ Integração com o ecossistema FIWARE.
 
 ---
 
-## 🔬 Funcionamento
+# 🔬 Funcionamento
 
 O dispositivo realiza:
 
-1. Leitura da aceleração nos eixos X, Y e Z
-2. Cálculo da magnitude da aceleração
-3. Remoção do efeito da gravidade
-4. Aplicação de filtro para reduzir ruídos
-5. Detecção de picos de movimento (passos)
-6. Envio dos dados para o FIWARE via MQTT
+1. Leitura dos dados de aceleração nos eixos X, Y e Z;
+2. Cálculo da magnitude da aceleração;
+3. Remoção do efeito da gravidade;
+4. Aplicação de limiares para redução de ruídos;
+5. Detecção automática dos passos;
+6. Monitoramento do nível da bateria;
+7. Envio periódico dos dados ao FIWARE Orion.
 
 ---
 
-## 📡 Comunicação MQTT
+# 🧪 Simulação no Wokwi
 
-```txt
-Tópico:
-/TEF/move001/attrs
+Para validação do funcionamento do sistema, foi desenvolvida uma simulação utilizando a plataforma **Wokwi**.
 
-Payload:
-s|10
-```
+A simulação utiliza:
 
-Onde:
+* ESP32;
+* Sensor MPU6050;
+* Potenciômetro para simulação da bateria;
+* LED indicador de bateria baixa.
 
-* `s` → atributo de passos
-* `10` → quantidade de passos
+A plataforma possibilitou demonstrar a aquisição dos dados, a detecção dos passos e a integração com o FIWARE sem a necessidade do hardware físico.
 
 ---
 
-## 📈 Dashboard Dinâmico
+# ☁️ Integração com FIWARE
 
-O CareStep agora conta com um Dashboard Dinâmico desenvolvido em Python, responsável por consultar automaticamente os dados armazenados no FIWARE STH-Comet e apresentar informações em tempo real sobre a atividade do usuário.
+Os dados coletados são enviados para o **FIWARE Orion Context Broker** a cada **10 segundos**.
 
-O dashboard realiza atualizações periódicas e permite acompanhar a evolução dos dados coletados pelo dispositivo de forma visual e intuitiva.
-
-## 📊 Indicadores Monitorados
-
-O dashboard exibe:
-
-👣 Quantidade de passos
-🏃 Intensidade do movimento
-🔋 Nível da bateria
-
-Além dos valores atuais, também são calculadas estatísticas simples, como média dos registros recebidos.
-
----
-
-### 🔹 Componentes utilizados
-
-- ESP32  
-- Sensor MPU6050 (acelerômetro) 
-
----
-
-## ☁️ Configuração do FIWARE
-
-### 🔹 Service Group
+## Entidade utilizada
 
 ```json
 {
-  "services": [
-    {
-      "apikey": "123456",
-      "cbroker": "http://orion:1026",
-      "entity_type": "movement",
-      "resource": "/iot/d"
-    }
-  ]
+    "id": "urn:ngsi-ld:StepMonitor:tenis001",
+    "type": "StepMonitor"
 }
+```
+
+## Atributos monitorados
+
+```text
+steps
+battery
+accelX
+accelY
+accelZ
+intensity
+status
 ```
 
 ---
 
-### 🔹 Device
+# 📊 Dashboard Inteligente
 
-```json
-{
-  "devices": [
-    {
-      "device_id": "move001",
-      "entity_name": "urn:ngsi-id:move:001",
-      "entity_type": "movement",
-      "protocol": "PDI-IoTA-UltraLight",
-      "transport": "MQTT",
-      "attributes": [
-        {
-          "object_id": "s",
-          "name": "steps",
-          "type": "Integer"
-        }
-      ]
-    }
-  ]
-}
-```
+O CareStep conta com um **dashboard desenvolvido em Python**, responsável por consultar automaticamente os dados armazenados no FIWARE e apresentá-los de forma clara e intuitiva.
+
+O dashboard realiza atualizações automáticas a cada **10 segundos**, permitindo o acompanhamento em tempo real da atividade física do usuário.
+
+## Indicadores monitorados
+
+* 👣 Quantidade de passos;
+* 🏃 Intensidade do movimento;
+* 🔋 Nível da bateria.
+
+Além dos valores atuais, o dashboard também apresenta gráficos históricos e estatísticas simples, como médias dos registros coletados.
 
 ---
 
-### 🔹 Subscription (Histórico)
+# 🖥️ Tecnologias do Dashboard
 
-```json
-{
-  "description": "Salvar histórico de passos",
-  "subject": {
-    "entities": [
-      {
-        "id": "urn:ngsi-id:move:001",
-        "type": "movement"
-      }
-    ],
-    "condition": {
-      "attrs": ["steps"]
-    }
-  },
-  "notification": {
-    "http": {
-      "url": "http://sth-comet:8666/notify"
-    },
-    "attrs": ["steps"]
-  }
-}
-```
+* Python;
+* Requests;
+* Matplotlib;
+* IPython Display.
 
 ---
 
-## 📊 Consulta de Dados
+# 📈 Consulta de Dados
 
-### 🔹 Estado Atual (Orion)
+## Estado Atual (Orion)
 
-```txt
+```http
 GET /v2/entities
 ```
 
 ---
 
-### 🔹 Histórico (STH-Comet)
+## Histórico (STH-Comet)
 
-```txt
-GET /STH/v1/contextEntities/type/movement/id/urn:ngsi-id:move:001/attributes/steps?hLimit=100&hOffset=0
+```http
+GET /STH/v1/contextEntities/type/StepMonitor/id/urn:ngsi-ld:StepMonitor:tenis001/attributes/steps
 ```
 
 ---
 
-## 👥 Equipe
+# 👥 Equipe
 
-| Nome                          | RM     |
-|------------------------------|--------|
+## 404 Girls Not Found
+
+| Integrante                      | RM     |
+| ------------------------------- | ------ |
 | Giovanna Oliveira Ferreira Dias | 566647 |
-| Maria Laura Druzeic            | 566634 |
-| Marianne Mukai Nishikawa       | 568001 |
+| Maria Laura Druzeic             | 566634 |
+| Marianne Mukai Nishikawa        | 568001 |
+
+**Turma:** 1ESPA
 
 ---
 
-## 📄 Licença
+# 🎯 Objetivo do Projeto
+
+Demonstrar como soluções baseadas em Internet das Coisas podem contribuir para o monitoramento da saúde e para a promoção de hábitos mais saudáveis, integrando sensores, processamento embarcado, plataformas IoT e ferramentas de visualização de dados.
+
+---
+
+# 📄 Licença
 
 Projeto desenvolvido para fins acadêmicos.
